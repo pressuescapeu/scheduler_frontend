@@ -43,9 +43,16 @@ export interface SectionMeeting {
 }
 
 export interface SectionWithDetails extends Section {
-  course_code: string;
-  course_name: string;
+  course: {
+    course_code: string;
+    course_name: string;
+    credits: number;
+  };
   meetings: SectionMeeting[];
+  professor?: {
+    first_name: string;
+    last_name: string;
+  };
 }
 
 export interface Schedule {

@@ -28,14 +28,16 @@ export const Sidebar = () => {
         description: 'Default schedule',
       });
     }
-  }, [schedules, schedulesLoading, createSchedule, isCreatingSchedule]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schedules?.length, schedulesLoading, isCreatingSchedule]);
 
   // Auto-select first schedule if none selected
   useEffect(() => {
     if (!schedulesLoading && schedules && schedules.length > 0 && !selectedScheduleId) {
       setSelectedScheduleId(schedules[0].id);
     }
-  }, [schedules, schedulesLoading, selectedScheduleId, setSelectedScheduleId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schedules?.length, schedulesLoading, selectedScheduleId]);
 
   const handleAddCourses = () => {
     navigate('/courses');

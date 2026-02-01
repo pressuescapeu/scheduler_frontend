@@ -16,7 +16,7 @@ export const ScheduleBlock = ({
   column,
   color,
 }: ScheduleBlockProps) => {
-  const meeting = section.meetings[0];
+  const meeting = section.meetings?.[0];
 
   return (
     <div
@@ -30,18 +30,22 @@ export const ScheduleBlock = ({
       }}
     >
       <div className="text-xs font-semibold">
-        {section.course_code} • {section.section_number}
+        {section.course?.course_code || 'Unknown'} - Section {section.section_number}
       </div>
-      {section.professor_name && (
+      {section.professor && (
         <div className="text-xs opacity-90 truncate">
-          {section.professor_name}
+          {section.professor.first_name} {section.professor.last_name}
         </div>
       )}
-      <div className="text-xs opacity-75 mt-1">
-        {formatTime(meeting.start_time)} - {formatTime(meeting.end_time)}
-      </div>
-      {meeting.room && (
-        <div className="text-xs opacity-75 truncate">{meeting.room}</div>
+      {meeting && (
+        <>
+          <div className="text-xs opacity-75 mt-1">
+            {formatTime(meeting.start_time)} - {formatTime(meeting.end_time)}
+          </div>
+          {meeting.room && (
+            <div className="text-xs opacity-75 truncate">{meeting.room}</div>
+          )}
+        </>
       )}
     </div>
   );

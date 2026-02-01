@@ -17,7 +17,7 @@ export const useScheduleGrid = (sections: SectionWithDetails[]) => {
     sections.forEach((section, index) => {
       const color = generateCourseColor(section.course_id, index);
 
-      section.meetings.forEach((meeting) => {
+      section.meetings?.forEach((meeting) => {
         const startRow = timeToGridRow(meeting.start_time);
         const span = calculateGridSpan(meeting.start_time, meeting.end_time);
         const endRow = startRow + span;

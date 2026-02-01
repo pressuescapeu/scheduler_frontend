@@ -14,18 +14,15 @@ export const CourseListItem = ({ section, onRemove, onViewDetails }: CourseListI
     <div className="p-3 rounded-lg border bg-card hover:bg-accent transition-colors">
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-sm truncate">{section.course_code}</span>
-            <Badge variant="secondary" className="text-xs">
-              {section.section_number}
-            </Badge>
+          <div className="font-semibold text-sm truncate">
+            {section.course?.course_code || 'Unknown'} - Section {section.section_number}
           </div>
           <div className="text-xs text-muted-foreground mt-1 truncate">
-            {section.course_name}
+            {section.course?.course_name || 'No name'}
           </div>
-          {section.professor_name && (
+          {section.professor && (
             <div className="text-xs text-muted-foreground mt-1 truncate">
-              {section.professor_name}
+              {section.professor.first_name} {section.professor.last_name}
             </div>
           )}
         </div>

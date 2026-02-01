@@ -25,7 +25,15 @@ export const hasConflict = (
   existingSections: SectionWithDetails[],
   newSection: SectionWithDetails
 ): boolean => {
+  if (!newSection.meetings || newSection.meetings.length === 0) {
+    return false;
+  }
+
   for (const existingSection of existingSections) {
+    if (!existingSection.meetings || existingSection.meetings.length === 0) {
+      continue;
+    }
+
     for (const existingMeeting of existingSection.meetings) {
       for (const newMeeting of newSection.meetings) {
         if (existingMeeting.day_of_week === newMeeting.day_of_week) {
@@ -53,10 +61,15 @@ export const getConflictingSections = (
   sections: SectionWithDetails[],
   targetSection: SectionWithDetails
 ): SectionWithDetails[] => {
+  if (!targetSection.meetings || targetSection.meetings.length === 0) {
+    return [];
+  }
+
   const conflicts: SectionWithDetails[] = [];
 
   for (const section of sections) {
     if (section.id === targetSection.id) continue;
+    if (!section.meetings || section.meetings.length === 0) continue;
 
     for (const meeting of section.meetings) {
       for (const targetMeeting of targetSection.meetings) {

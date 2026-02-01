@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { SectionList } from '@/components/courses/SectionList';
 import { useCourse, useCourseSections } from '@/hooks/api/useCourses';
@@ -34,12 +35,41 @@ export default function CourseDetailPage() {
   const { data: scheduleData } = useSchedule(selectedScheduleId);
   const { mutate: addSection, isPending: isAdding } = useAddSection();
 
-  const { conflictingSections } = useConflictDetection(
+  const { conflictingSections, hasTimeConflict } = useConflictDetection(
     scheduleData?.sections || [],
     pendingSection
   );
 
   const selectedSectionIds = (scheduleData?.sections || []).map((s) => s.id);
+
+  // Check for conflicts when pendingSection changes
+  useEffect(() => {
+    if (!pendingSection) return;
+
+    // Check if section is already in schedule
+    if (selectedSectionIds.includes(pendingSection.id)) {
+      setPendingSection(null);
+      return;
+    }
+
+    if (hasTimeConflict) {
+      setConflictDialogOpen(true);
+    } else if (selectedScheduleId && !isAdding) {
+      // No conflicts, automatically add the section
+      addSection(
+        { scheduleId: selectedScheduleId, sectionId: pendingSection.id },
+        {
+          onSuccess: () => {
+            setPendingSection(null);
+          },
+          onError: () => {
+            setPendingSection(null);
+          },
+        }
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingSection, hasTimeConflict, selectedSectionIds]);
 
   const handleAddSection = (section: SectionWithDetails) => {
     if (!selectedScheduleId) {
@@ -48,23 +78,6 @@ export default function CourseDetailPage() {
     }
 
     setPendingSection(section);
-    
-    // Check for conflicts
-    const conflicts = useConflictDetection(scheduleData?.sections || [], section);
-    if (conflicts.hasTimeConflict) {
-      setConflictDialogOpen(true);
-      return;
-    }
-
-    // No conflicts, add section
-    addSection(
-      { scheduleId: selectedScheduleId, sectionId: section.id },
-      {
-        onSuccess: () => {
-          setPendingSection(null);
-        },
-      }
-    );
   };
 
   const handleConfirmAdd = () => {
@@ -155,9 +168,11 @@ export default function CourseDetailPage() {
             <div className="space-y-2">
               {conflictingSections.map((section) => (
                 <div key={section.id} className="p-2 border rounded">
-                  <div className="font-medium">{section.course_code}</div>
+                  <div className="font-medium">
+                    {section.course?.course_code || 'Unknown'} - Section {section.section_number}
+                  </div>
                   <div className="text-sm text-muted-foreground">
-                    Section {section.section_number}
+                    {section.course?.course_name || 'No name'}
                   </div>
                 </div>
               ))}

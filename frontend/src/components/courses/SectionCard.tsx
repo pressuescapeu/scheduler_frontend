@@ -12,7 +12,7 @@ interface SectionCardProps {
 }
 
 export const SectionCard = ({ section, onAdd, isSelected }: SectionCardProps) => {
-  const meeting = section.meetings[0];
+  const meeting = section.meetings?.[0];
 
   return (
     <Card className={isSelected ? 'border-primary' : ''}>
@@ -20,14 +20,16 @@ export const SectionCard = ({ section, onAdd, isSelected }: SectionCardProps) =>
         <div className="flex items-start justify-between">
           <div className="flex-1 space-y-2">
             <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold">{section.course?.course_code || 'Unknown'} - Section {section.section_number}</span>
               <Badge variant={section.section_type === 'Lecture' ? 'default' : 'secondary'}>
                 {section.section_type}
               </Badge>
-              <span className="text-sm font-medium">Section {section.section_number}</span>
             </div>
 
-            {section.professor_name && (
-              <p className="text-sm text-muted-foreground">{section.professor_name}</p>
+            {section.professor && (
+              <p className="text-sm text-muted-foreground">
+                {section.professor.first_name} {section.professor.last_name}
+              </p>
             )}
 
             {meeting && (
