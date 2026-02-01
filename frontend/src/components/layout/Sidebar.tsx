@@ -8,7 +8,7 @@ import { CreditsCounter } from '@/components/schedule/CreditsCounter';
 import { EmptyState } from '@/components/schedule/EmptyState';
 import { useNavigate } from 'react-router-dom';
 import { ScheduleSelector } from '@/components/schedule/ScheduleSelector';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 
 export const Sidebar = () => {
   const navigate = useNavigate();

@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/badge';
 import { X, Info } from 'lucide-react';
 import type { SectionWithDetails } from '@/types';
 
