@@ -5,12 +5,14 @@ import { useNavigate } from 'react-router-dom';
 
 export const useLogin = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const setAuth = authStore((state) => state.setAuth);
 
   return useMutation({
     mutationFn: authApi.login,
     onSuccess: (data) => {
       setAuth(data.token, data.student);
+      queryClient.invalidateQueries(); // Refetch all queries after login
       navigate('/dashboard');
     },
   });
@@ -18,12 +20,14 @@ export const useLogin = () => {
 
 export const useRegister = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const setAuth = authStore((state) => state.setAuth);
 
   return useMutation({
     mutationFn: authApi.register,
     onSuccess: (data) => {
       setAuth(data.token, data.student);
+      queryClient.invalidateQueries(); // Refetch all queries after register
       navigate('/dashboard');
     },
   });

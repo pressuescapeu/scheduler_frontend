@@ -20,6 +20,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useState } from 'react';
+import { MeetingSelector } from '@/components/courses/MeetingSelector';
 
 export default function CourseDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -27,7 +28,9 @@ export default function CourseDetailPage() {
   const courseId = Number(id);
   
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
+  const [meetingSelectorOpen, setMeetingSelectorOpen] = useState(false);
   const [pendingSection, setPendingSection] = useState<SectionWithDetails | null>(null);
+  const [selectedMeetingId, setSelectedMeetingId] = useState<number | null>(null);
 
   const selectedScheduleId = scheduleStore((state) => state.selectedScheduleId);
   const { data: course, isLoading: courseLoading } = useCourse(courseId);
@@ -44,11 +47,12 @@ export default function CourseDetailPage() {
 
   // Check for conflicts when pendingSection changes
   useEffect(() => {
-    if (!pendingSection) return;
+    if (!pendingSection || !selectedMeetingId) return;
 
     // Check if section is already in schedule
     if (selectedSectionIds.includes(pendingSection.id)) {
       setPendingSection(null);
+      setSelectedMeetingId(null);
       return;
     }
 
@@ -57,19 +61,25 @@ export default function CourseDetailPage() {
     } else if (selectedScheduleId && !isAdding) {
       // No conflicts, automatically add the section
       addSection(
-        { scheduleId: selectedScheduleId, sectionId: pendingSection.id },
+        { 
+          scheduleId: selectedScheduleId, 
+          sectionId: pendingSection.id,
+          meetingId: selectedMeetingId 
+        },
         {
           onSuccess: () => {
             setPendingSection(null);
+            setSelectedMeetingId(null);
           },
           onError: () => {
             setPendingSection(null);
+            setSelectedMeetingId(null);
           },
         }
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingSection, hasTimeConflict, selectedSectionIds]);
+  }, [pendingSection, selectedMeetingId, hasTimeConflict, selectedSectionIds]);
 
   const handleAddSection = (section: SectionWithDetails) => {
     if (!selectedScheduleId) {
@@ -78,16 +88,66 @@ export default function CourseDetailPage() {
     }
 
     setPendingSection(section);
+
+    // Handle meeting selection based on count and type
+    if (!section.meetings || section.meetings.length === 0) {
+      // Internship or no meetings - add directly with null meeting_id
+      setSelectedMeetingId(null);
+      addSection(
+        { scheduleId: selectedScheduleId, sectionId: section.id, meetingId: null },
+        {
+          onSuccess: () => {
+            setPendingSection(null);
+          },
+        }
+      );
+    } else if (section.meetings.length === 1) {
+      // Single meeting - auto-select
+      setSelectedMeetingId(section.meetings[0].id);
+    } else {
+      // Multiple meetings - check if they're same time (lecture) or different times (lab)
+      const uniqueTimes = new Set(
+        section.meetings.map((m) => `${m.start_time}-${m.end_time}`)
+      );
+      
+      if (uniqueTimes.size === 1) {
+        // Same time on different days (e.g., Mon/Wed/Fri 9:00-9:50) - it's a lecture
+        // Add with null meeting_id so backend returns ALL meetings
+        setSelectedMeetingId(null);
+        addSection(
+          { scheduleId: selectedScheduleId, sectionId: section.id, meetingId: null },
+          {
+            onSuccess: () => {
+              setPendingSection(null);
+            },
+          }
+        );
+      } else {
+        // Different times - lab with options (Mon 2pm OR Tue 3pm)
+        // Show selector so student picks one
+        setMeetingSelectorOpen(true);
+      }
+    }
+  };
+
+  const handleMeetingSelect = (meetingId: number) => {
+    setSelectedMeetingId(meetingId);
+    setMeetingSelectorOpen(false);
   };
 
   const handleConfirmAdd = () => {
     if (!selectedScheduleId || !pendingSection) return;
 
     addSection(
-      { scheduleId: selectedScheduleId, sectionId: pendingSection.id },
+      { 
+        scheduleId: selectedScheduleId, 
+        sectionId: pendingSection.id,
+        meetingId: selectedMeetingId 
+      },
       {
         onSuccess: () => {
           setPendingSection(null);
+          setSelectedMeetingId(null);
           setConflictDialogOpen(false);
         },
       }
@@ -155,8 +215,33 @@ export default function CourseDetailPage() {
           )}
         </div>
 
+        {/* Meeting Selector Dialog */}
+        {pendingSection && (
+          <MeetingSelector
+            meetings={pendingSection.meetings || []}
+            sectionNumber={pendingSection.section_number}
+            courseCode={pendingSection.course?.course_code || 'Unknown'}
+            isOpen={meetingSelectorOpen}
+            onClose={() => {
+              setMeetingSelectorOpen(false);
+              setPendingSection(null);
+            }}
+            onSelect={handleMeetingSelect}
+          />
+        )}
+
         {/* Conflict Dialog */}
-        <Dialog open={conflictDialogOpen} onOpenChange={setConflictDialogOpen}>
+        <Dialog 
+          open={conflictDialogOpen} 
+          onOpenChange={(open) => {
+            setConflictDialogOpen(open);
+            if (!open) {
+              // User closed/cancelled - clear pending section to prevent re-trigger
+              setPendingSection(null);
+              setSelectedMeetingId(null);
+            }
+          }}
+        >
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Schedule Conflict Detected</DialogTitle>
@@ -179,7 +264,14 @@ export default function CourseDetailPage() {
             </div>
 
             <DialogFooter>
-              <Button variant="outline" onClick={() => setConflictDialogOpen(false)}>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setConflictDialogOpen(false);
+                  setPendingSection(null);
+                  setSelectedMeetingId(null);
+                }}
+              >
                 Cancel
               </Button>
               <Button variant="destructive" onClick={handleConfirmAdd} disabled={isAdding}>

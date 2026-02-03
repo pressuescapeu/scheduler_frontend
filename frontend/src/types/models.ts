@@ -60,6 +60,7 @@ export interface Schedule {
   student_id: number;
   schedule_name: string;
   description?: string;
+  is_submitted: boolean;
   created_at: string;
   updated_at: string;
 }

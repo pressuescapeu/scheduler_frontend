@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/Button';
-import { Plus, RefreshCw } from 'lucide-react';
-import { useSchedules, useSchedule, useRemoveSection, useCreateSchedule } from '@/hooks/api/useSchedules';
+import { Plus, RefreshCw, Send } from 'lucide-react';
+import { useSchedules, useSchedule, useRemoveSection, useCreateSchedule, useSubmitSchedule } from '@/hooks/api/useSchedules';
 import { scheduleStore } from '@/store/scheduleStore';
 import { Spinner } from '@/components/ui/spinner';
 import { CourseListItem } from '@/components/schedule/CourseListItem';
@@ -8,10 +8,19 @@ import { CreditsCounter } from '@/components/schedule/CreditsCounter';
 import { EmptyState } from '@/components/schedule/EmptyState';
 import { useNavigate } from 'react-router-dom';
 import { ScheduleSelector } from '@/components/schedule/ScheduleSelector';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 export const Sidebar = () => {
   const navigate = useNavigate();
+  const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
   const selectedScheduleId = scheduleStore((state) => state.selectedScheduleId);
   const setSelectedScheduleId = scheduleStore((state) => state.setSelectedScheduleId);
 
@@ -19,6 +28,7 @@ export const Sidebar = () => {
   const { data: scheduleData, isLoading: scheduleLoading } = useSchedule(selectedScheduleId);
   const { mutate: removeSection } = useRemoveSection();
   const { mutate: createSchedule, isPending: isCreatingSchedule } = useCreateSchedule();
+  const { mutate: submitSchedule, isPending: isSubmitting } = useSubmitSchedule();
 
   // Auto-create a schedule if none exist
   useEffect(() => {
@@ -36,8 +46,7 @@ export const Sidebar = () => {
     if (!schedulesLoading && schedules && schedules.length > 0 && !selectedScheduleId) {
       setSelectedScheduleId(schedules[0].id);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [schedules?.length, schedulesLoading, selectedScheduleId]);
+  }, [schedules, schedulesLoading, selectedScheduleId, setSelectedScheduleId]);
 
   const handleAddCourses = () => {
     navigate('/courses');
@@ -64,6 +73,18 @@ export const Sidebar = () => {
       navigate(`/courses/${section.course_id}`);
     }
   };
+
+  const handleSubmit = () => {
+    if (!selectedScheduleId) return;
+    submitSchedule(selectedScheduleId, {
+      onSuccess: () => {
+        setSubmitDialogOpen(false);
+      },
+    });
+  };
+
+  const isSubmitted = scheduleData?.is_submitted || false;
+  const hasCourses = scheduleData?.sections && scheduleData.sections.length > 0;
 
   return (
     <aside className="hidden md:flex md:w-80 md:flex-col md:fixed md:inset-y-0 md:left-0 md:top-14 border-r bg-background">
@@ -117,18 +138,62 @@ export const Sidebar = () => {
           )}
         </div>
 
-        {/* Reset Button */}
-        <div className="p-4 border-t">
+        {/* Action Buttons */}
+        <div className="p-4 border-t space-y-2">
+          {isSubmitted ? (
+            <div className="space-y-2">
+              <div className="text-sm text-center text-muted-foreground bg-green-50 dark:bg-green-950 py-2 px-3 rounded">
+                ✓ Schedule Submitted
+              </div>
+              <Button
+                onClick={() => setSubmitDialogOpen(true)}
+                className="w-full"
+                variant="outline"
+              >
+                <Send className="mr-2 h-4 w-4" />
+                Resubmit Changes
+              </Button>
+            </div>
+          ) : (
+            <Button
+              onClick={() => setSubmitDialogOpen(true)}
+              className="w-full"
+              disabled={!hasCourses}
+            >
+              <Send className="mr-2 h-4 w-4" />
+              Submit Schedule
+            </Button>
+          )}
           <Button
             onClick={handleReset}
             variant="outline"
             className="w-full"
-            disabled={!scheduleData?.sections || scheduleData.sections.length === 0}
+            disabled={!hasCourses}
           >
             <RefreshCw className="mr-2 h-4 w-4" />
             Reset
           </Button>
         </div>
+
+        {/* Submit Confirmation Dialog */}
+        <Dialog open={submitDialogOpen} onOpenChange={setSubmitDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Submit Schedule</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to submit this schedule? You won't be able to edit it after submission.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSubmitDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSubmit} disabled={isSubmitting}>
+                {isSubmitting ? 'Submitting...' : 'Submit'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </aside>
   );

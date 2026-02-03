@@ -45,8 +45,8 @@ export const useAddSection = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ scheduleId, sectionId }: { scheduleId: number; sectionId: number }) =>
-      schedulesApi.addSection(scheduleId, sectionId),
+    mutationFn: ({ scheduleId, sectionId, meetingId }: { scheduleId: number; sectionId: number; meetingId?: number | null }) =>
+      schedulesApi.addSection(scheduleId, sectionId, meetingId),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['schedule', variables.scheduleId] });
     },
@@ -61,6 +61,18 @@ export const useRemoveSection = () => {
       schedulesApi.removeSection(scheduleId, sectionId),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['schedule', variables.scheduleId] });
+    },
+  });
+};
+
+export const useSubmitSchedule = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: schedulesApi.submitSchedule,
+    onSuccess: (_, scheduleId) => {
+      queryClient.invalidateQueries({ queryKey: ['schedule', scheduleId] });
+      queryClient.invalidateQueries({ queryKey: ['schedules'] });
     },
   });
 };

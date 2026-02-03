@@ -21,11 +21,19 @@ export const schedulesApi = {
     await apiClient.delete(`/schedules/${id}`);
   },
 
-  addSection: async (scheduleId: number, sectionId: number): Promise<void> => {
-    await apiClient.post(`/schedules/${scheduleId}/sections`, { section_id: sectionId });
+  addSection: async (scheduleId: number, sectionId: number, meetingId?: number | null): Promise<void> => {
+    await apiClient.post(`/schedules/${scheduleId}/sections`, { 
+      section_id: sectionId,
+      meeting_id: meetingId 
+    });
   },
 
   removeSection: async (scheduleId: number, sectionId: number): Promise<void> => {
     await apiClient.delete(`/schedules/${scheduleId}/sections/${sectionId}`);
+  },
+
+  submitSchedule: async (id: number): Promise<Schedule> => {
+    const response = await apiClient.patch(`/schedules/${id}/submit`);
+    return response.data;
   },
 };
